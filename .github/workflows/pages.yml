@@ -1,0 +1,31 @@
+name: Pages
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+      - name: git config
+        run: |
+          git config user.name pages-deploy-action
+          git config user.email pages-deploy-action@users.noreply.github.com
+          git remote set-url origin https://${{github.actor}}:${{github.token}}@github.com/${{github.repository}}.git
+      - run: make index.html
+      - name: deploy pages
+        run: |
+          git ls-remote --exit-code . origin/gh-pages \
+            && git checkout -b gh-pages \
+            || git checkout --orphan gh-pages
+          git reset --hard
+          git pull --set-upstream origin gh-pages || echo probably first commit
+          git add index.html
+          git commit --all --message ":rocket: Update generated pages"
+          git push --force origin gh-pages
